@@ -1,0 +1,16 @@
+{
+  "auto_start": "Initiates autonomous takeoff sequence",
+  "auto_land": "Triggers autonomous landing routine",
+  "speed": "Engages high-speed flight mode",
+  "stunt": "Activates stunt maneuver mode",
+  "photo": "Captures a photo (short press)",
+  "video_start": "Begins video recording (long press)",
+  "trim_throttle_up": "Increases throttle trim",
+  "trim_throttle_down": "Decreases throttle trim",
+  "trim_yaw_left": "Adjusts yaw trim left",
+  "trim_yaw_right": "Adjusts yaw trim right",
+  "trim_pitch_up": "Adjusts pitch trim up",
+  "trim_pitch_down": "Adjusts pitch trim down",
+  "trim_roll_left": "Adjusts roll trim left",
+  "trim_roll_right": "Adjusts roll trim right"
+}
