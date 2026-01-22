@@ -1,10 +1,18 @@
 import tkinter as tk
 from tkinter import ttk
+import subprocess
 
 class GroundStationGUI:
     def __init__(self):
         self.root = tk.Tk()
         self.root.title("ASC-2680 Ground Station")
+
+        # Track scrcpy state
+
+        self.scrcpy_process = None
+
+        self.video_enabled = False
+
 
         # Mode label
 
@@ -29,6 +37,16 @@ class GroundStationGUI:
         self.button_frame.pack(pady=10)
     
         self.button_labels = {}
+
+        # --- Video Feed Toggle Button ---
+
+        self.video_button = tk.Button(
+            self.root,
+            text="Enable Video Feed",
+            command=self.toggle_video_feed
+        )
+        self.video_button.pack(pady=5)
+        #------------------------------
     
     def load_buttons(self, button_map):
         for btn in button_map.keys():
@@ -37,6 +55,26 @@ class GroundStationGUI:
             lbl.pack(anchor="w")
             self.button_labels[btn] = var
 
+    def toggle_video_feed(self):
+        if not self.video_enabled:
+            try:
+                self.scrcpy_process = subprocess.Popen(
+                    [r"C:\School\SCRCPY\scrcpy-win64-v3.3.4\scrcpy.exe", 
+                     "--max-size", "1080"]
+                )
+                self.video_button.config(text="Disable Video Feed")
+                self.video_enabled = True
+            except Exception as e:
+                print(f"Failed to start scrcpy: {e}")
+        
+        else:
+            if self.scrcpy_process:
+                self.scrcpy_process.terminate()
+                self.scrcpy_process = None
+
+            self.video_button.cofig(text="Enable Video Feed")
+            self.video_enabled = False
+    #--------------------------------------------------------------------
     def update(self, throttle, yaw, pitch, roll, mode, button_state):
         self.mode_var.set(f"Mode: {mode.upper()}")
 

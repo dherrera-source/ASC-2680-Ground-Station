@@ -6,6 +6,10 @@ import select
 import tkinter as tk
 import msvcrt
 import ctypes
+import subprocess
+
+def launch_scrcpy():
+    subprocess.Popen(["C:\School\SCRCPY", "--max-size", "800"])
 
 with open("button_map.json", "r") as f:
     BUTTON_MAP = json.load(f)
