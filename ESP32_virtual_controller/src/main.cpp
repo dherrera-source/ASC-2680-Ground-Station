@@ -31,7 +31,7 @@ void loop() {
       float roll      = doc["roll"]     | 0.0f;
 
       // Apply to controller
-      setThrottle(throttle);
+      setThrottle(throttle);dad
       setYaw(yaw);
       setPitch(pitch);
       setRoll(roll);

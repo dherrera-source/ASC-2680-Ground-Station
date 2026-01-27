@@ -7,14 +7,14 @@ import tkinter as tk
 import msvcrt
 import ctypes
 import subprocess
+import threading
 
 def launch_scrcpy():
-    subprocess.Popen(["C:\School\SCRCPY", "--max-size", "800"])
+    subprocess.Popen([r"C:\School\SCRCPY", "--max-size", "800"])
 
 with open("button_map.json", "r") as f:
     BUTTON_MAP = json.load(f)
 
-from gui_controls import GroundStationGUI
 from pynput import mouse
 
 # --- Mouse Globals ---
@@ -33,12 +33,6 @@ def on_move(x, y):
 
 mouse_listener = mouse.Listener(on_move=on_move)
 mouse_listener.start()
-
-# --- Initialize GUI ---
-
-gui = GroundStationGUI()
-gui.load_buttons(BUTTON_MAP)
-gui.root.update()
 
 #--- Configuration ---
 
@@ -90,7 +84,6 @@ def handle_manual_buttons():
         key = msvcrt.getwch().lower()
         if key in KEY_TO_BUTTON:
             press(KEY_TO_BUTTON[key])
-
 
 # --- Long-press handler ---
 
@@ -170,6 +163,7 @@ def get_manual_inputs():
 
     throttle = 0.0
     yaw = 0.0
+    pitch = 0.0
     roll = 0.0
 
     # Windows key state checker
@@ -200,7 +194,13 @@ def get_manual_inputs():
     mouse_dx = 0
     mouse_dy = 0
 
+    print("inputs:", throttle, yaw, pitch, roll)
+    print("KEY RAW:", ctypes.windll.user32.GetAsyncKeyState(0x57))
+    print("MOUSE RAW:", mouse_dy)
+
     return throttle, yaw, pitch, roll
+
+    
 
 
 # --- Autonomous Input (PLaceholder) ---
@@ -252,11 +252,20 @@ def check_for_mode_switch(current_mode):
             print("Switched to AUTO mode")
             return "auto"
     return current_mode   
-    
+
+# --- Shutdown Handler ---
+def shutdown_socket():
+    try:
+        sock.close()
+    except:
+        pass    
+
 #--- Main Loop ---
 
 def main():
     global mode
+
+    
     print("Ground station running ...")
     print(f"Sending to {ESP32_IP}:{ESP32_PORT}")
     print("Press 'm' for manual mode, 'n' for auto mode")
@@ -287,6 +296,17 @@ def main():
         time.sleep(DELAY)
 
 
+
 if __name__ == "__main__":
-    main()
+    from gui_controls import GroundStationGUI
+    import tkinter as tk
+
+    root = tk.Tk()
+    gui = GroundStationGUI(root)
+    gui.load_buttons(BUTTON_MAP)
+
+    control_thread = threading.Thread(target=main, daemon=True)
+    control_thread.start()
+    
+    root.mainloop()
     
