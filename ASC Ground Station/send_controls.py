@@ -51,6 +51,9 @@ DELAY = 1.00 / PACKET_RATE
 #--- UDP SETUP ---
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+sock.setblocking(False)
+
+_last_debug = 0
 
 # --- Global State ---
 
@@ -118,10 +121,28 @@ def build_packet(throttle, yaw, pitch, roll, buttons=None):
     return json.dumps(packet).encode()
 
 def send_controls(throttle, yaw, pitch, roll, buttons=None):
+    global _last_debug
+
     if buttons is None:
         buttons = {name: 1 for name in button_state.keys()}
-    packet = build_packet(throttle, yaw, pitch, roll, buttons)
-    sock.sendto(packet, (ESP32_IP, ESP32_PORT))
+
+    payload = {
+        "throttle": float(throttle),
+        "yaw": float(yaw),
+        "pitch": float(pitch),
+        "roll": float(roll),
+        "buttons": buttons,
+        "heartbeat": time.time()
+    }
+
+    data = json.dumps(payload).encode("utf-8")
+    sock.sendto(data, (ESP32_IP, ESP32_PORT))
+
+    if time.time() - _last_debug > 0.2:
+        print("\n === PYTHON SENDING PACKET ===")
+        print(f"To: {ESP32_IP}:{ESP32_PORT}")
+        print("Payload:", json.dumps(payload))
+        _last_debug = time.time()
 
 def press(button_name):
     button_state[button_name] = {"pressed_at": time.time()}

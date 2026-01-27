@@ -12,25 +12,29 @@ void setup() {
   network_begin("YOUR_WIFI", "YOUR_PASSWORD");
 }
 
+unsigned long lastDebug = 0;
+
 void loop() {
   char buffer[512];
   int len = network_receive(buffer, sizeof(buffer));
   
   if (len > 0) {
+    // Parse JSON
     StaticJsonDocument<256> doc;
     DeserializationError err = deserializeJson(doc, buffer);
-    
-    if (!err) {
-      // Reset failsafe timer
-      lastPacketTime = millis();
-      failsafeActive = false;
 
-      //Stick controls
-      setThrottle(doc["throttle"] | 0.0);
-      setYaw(doc["yaw"] | 0.0);
-      setPitch(doc["pitch"] | 0.0);
-      setRoll(doc["roll"] | 0.0);
-      
+    if (!err) {
+      // Extract Values
+      float throttle  = doc["throttle"] | 0.0f;
+      float yaw       = doc["yaw"]      | 0.0f;
+      float pitch     = doc["pitch"]    | 0.0f;
+      float roll      = doc["roll"]     | 0.0f;
+
+      // Apply to controller
+      setThrottle(throttle);
+      setYaw(yaw);
+      setPitch(pitch);
+      setRoll(roll);
       
       // Buttons
       if (doc["buttons"].is<JsonObject>()) {
@@ -39,8 +43,28 @@ void loop() {
             pressButton(kv.key().c_str());
           }
         }
-      }  
-    }  
-  }
+      }
+
+      // Rate-limited debug output
+      if (millis() - lastDebug > 200) {
+        Serial.println(" == ESP32 RECEIVED PACKET ==");
+        Serial.print("Raw: ");
+        Serial.println(buffer);
+
+        Serial.print("Throttle: "); Serial.println(throttle);
+        Serial.print("Yaw: ");      Serial.println(yaw);
+        Serial.print("Pitch: ");    Serial.println(pitch);
+        Serial.print("Roll: ");     Serial.println(roll);
+
+        lastDebug = millis();
+      }
+    } else {
+        if (millis() - lastDebug > 200) {
+          Serial.print("JSON Parse Error: ");
+          Serial.println(err.c_str());
+      }
+    }
+  }  
 }
+
 

@@ -4,9 +4,22 @@
 static WiFiUDP udp;
 static const int PORT = 14550;  //can change
 
+// Choose static IP
+IPAddress local_IP(192, 168, 1, 87); // ESP32's fixed IP
+IPAddress gateway(192, 168, 1, 1);   // Router IP
+IPAddress subnet(255, 255, 255, 0);  // Subnet mask
+IPAddress dns(8, 8, 8, 8);         // DNS server
+
 void network_begin(const char* ssid, const char* password) {
     WiFi.mode(WIFI_STA);
-    WiFi.begin(ssid, password);
+
+    // Apply static IP BEFORE Wifi.begin()
+    if (!WiFi.config(local_IP, gateway, subnet, dns)) {
+        Serial.println("Static IP config failed");
+    }
+
+    WiFi.begin("Verizon_P7CDZW", "wise5haw8deify");
+
     while (WiFi.status() != WL_CONNECTED) {
         delay(200);
     }
