@@ -5,8 +5,8 @@ static WiFiUDP udp;
 static const int PORT = 14550;  //can change
 
 // Choose static IP
-IPAddress local_IP(192, 168, 1, 87); // ESP32's fixed IP
-IPAddress gateway(192, 168, 1, 1);   // Router IP
+IPAddress local_IP(192, 168, 0, 69); // ESP32's fixed IP
+IPAddress gateway(192, 168, 0, 1);   // Router IP
 IPAddress subnet(255, 255, 255, 0);  // Subnet mask
 IPAddress dns(8, 8, 8, 8);         // DNS server
 
@@ -18,7 +18,7 @@ void network_begin(const char* ssid, const char* password) {
         Serial.println("Static IP config failed");
     }
 
-    WiFi.begin("Verizon_P7CDZW", "wise5haw8deify");
+    WiFi.begin("ADSS", "ADSS69420");
 
     while (WiFi.status() != WL_CONNECTED) {
         delay(200);

@@ -9,7 +9,10 @@ bool failsafeActive = false;
 
 void setup() {
   Serial.begin(115200);
-  network_begin("YOUR_WIFI", "YOUR_PASSWORD");
+
+  initControllerInterface();
+
+  network_begin("ADSS", "ADSS69420");
 }
 
 unsigned long lastDebug = 0;
@@ -31,7 +34,7 @@ void loop() {
       float roll      = doc["roll"]     | 0.0f;
 
       // Apply to controller
-      setThrottle(throttle);dad
+      setThrottle(throttle);
       setYaw(yaw);
       setPitch(pitch);
       setRoll(roll);

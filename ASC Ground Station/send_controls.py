@@ -36,7 +36,7 @@ mouse_listener.start()
 
 #--- Configuration ---
 
-ESP32_IP = "192.168.1.87" # Replace with your ESP32's IP address
+ESP32_IP = "192.168.0.69" # Replace with your ESP32's IP address
 ESP32_PORT = 14550 #MUST MATCH UDP.BEGIN() ON ESP32
 
 PACKET_RATE = 20        #PACKETS PER SECOND
@@ -137,6 +137,15 @@ def send_controls(throttle, yaw, pitch, roll, buttons=None):
         print("Payload:", json.dumps(payload))
         _last_debug = time.time()
 
+def send_controls_packet(packet):
+    throttle = packet.get("throttle", 0)
+    yaw = packet.get("yaw", 0)
+    pitch = packet.get("pitch", 0)
+    roll = packet.get("roll", 0)
+    buttons = packet.get("buttons", {})
+
+    send_controls(throttle, yaw, pitch, roll, buttons)
+
 def press(button_name):
     button_state[button_name] = {"pressed_at": time.time()}
 
@@ -200,9 +209,6 @@ def get_manual_inputs():
 
     return throttle, yaw, pitch, roll
 
-    
-
-
 # --- Autonomous Input (PLaceholder) ---
 
 def auto_flight_engine():
@@ -262,7 +268,7 @@ def shutdown_socket():
 
 #--- Main Loop ---
 
-def main():
+def main(gui):
     global mode
 
     
@@ -277,14 +283,21 @@ def main():
 
         # Generate controls based on mode
 
-        if mode =="manual":
-            handle_manual_buttons()
-            throttle, yaw, pitch, roll = get_manual_inputs()
-        else:
-            throttle, yaw, pitch, roll = auto_flight_engine()
+        if gui.handshake_active:
+            continue
 
-        # --- Long-press evaluation (shared) ---
-        handle_long_press_logic()
+            pass
+        
+        else:
+            if mode =="manual":
+                handle_manual_buttons()
+                throttle, yaw, pitch, roll = get_manual_inputs()
+        
+            else:
+                throttle, yaw, pitch, roll = auto_flight_engine()
+
+            # --- Long-press evaluation (shared) ---
+            handle_long_press_logic()
 
         # Send to ESP32
 
@@ -295,8 +308,6 @@ def main():
 
         time.sleep(DELAY)
 
-
-
 if __name__ == "__main__":
     from gui_controls import GroundStationGUI
     import tkinter as tk
@@ -305,8 +316,8 @@ if __name__ == "__main__":
     gui = GroundStationGUI(root)
     gui.load_buttons(BUTTON_MAP)
 
-    control_thread = threading.Thread(target=main, daemon=True)
+    control_thread = threading.Thread(target=main, args=(gui,), daemon=True)
     control_thread.start()
-    
+
     root.mainloop()
     

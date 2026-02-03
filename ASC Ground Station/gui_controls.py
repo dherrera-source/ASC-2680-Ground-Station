@@ -1,12 +1,17 @@
 import tkinter as tk
 from tkinter import ttk
 import subprocess
+import threading
+import time
+import send_controls
 from send_controls import shutdown_socket
+from send_controls import send_controls_packet
 class GroundStationGUI:
     def __init__(self, root):
         self.root = root
         self.scrcpy_process = None
         self.video_enabled = False
+        self.handshake_active = False
 
         self.create_widgets()
 
@@ -35,6 +40,14 @@ class GroundStationGUI:
         self.button_frame.pack(pady=10)
         self.button_labels = {}
 
+        # --- Controller Connect ---
+        self. sync_button = tk.Button(
+            self.root,
+            text="Controller Connect",
+            command=self.run_connect_sequence
+        )
+        self.sync_button.pack(pady=5)
+
         # --- Video Feed Toggle Button ---
         self.video_button = tk.Button(
             self.root,
@@ -60,6 +73,41 @@ class GroundStationGUI:
             lbl = ttk.Label(self.button_frame, textvariable=var)
             lbl.pack(anchor="w")
             self.button_labels[btn] = var
+
+    def run_connect_sequence(self):
+        self.mode = "manual"
+        self.handshake_active = True
+        time.sleep(0.01)
+
+        threading.Thread(target=self.connect_sequence, daemon=True).start()
+
+    def connect_sequence(self):
+        
+        self.handshake_active = True
+        self.send_handshake_values(1,1)
+        time.sleep(0.3)
+        self.send_handshake_values(-1,-1)
+        time.sleep(0.3)
+        self.send_handshake_values(1,1)
+        time.sleep(0.3)
+
+        for _ in range(2):
+            self.send_handshake_values(1,-1)
+            time.sleep(0.3)
+            self.send_handshake_values(-1,1)
+            time.sleep(0.3)
+
+        self.send_handshake_values(0,0)
+        self.handshake_active = False
+
+    def send_handshake_values(self, throttle, pitch):
+        send_controls_packet({
+            "throttle": throttle,
+            "yaw": 0,
+            "pitch": pitch,
+            "roll": 0,
+            "buttons": {}
+        })
 
     def toggle_video_feed(self):
         if not self.video_enabled:

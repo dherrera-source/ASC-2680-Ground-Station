@@ -1,6 +1,6 @@
 #pragma once
 #include <Arduino.h>
-void initControllerINterface();
+void initControllerInterface();
 
 // --------------------------------------------
 // Initialization

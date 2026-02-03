@@ -43,6 +43,13 @@ void initControllerInterface() {
     //Initialize buttons
     initButtonPins();
 
+    // PWM channels
+    ledcSetup(0, PWM_FREQ, PWM_RES);
+    ledcAttachPin(YAW_PIN, 0);
+    
+    ledcSetup(1, PWM_FREQ, PWM_RES);
+    ledcAttachPin(ROLL_PIN, 1);
+    
     //Smoothed Values
     smoothedThrottle = 0.0f;
     smoothedYaw      = 0.0f;
@@ -55,12 +62,6 @@ void initControllerInterface() {
     writeVoltagePWM((0), YAW_PIN, 1.65f);
     writeVoltagePWM((1), ROLL_PIN, 1.65f);
 
-    // PWM channels
-    ledcSetup(0, PWM_FREQ, PWM_RES);
-    ledcAttachPin(YAW_PIN, 0);
-    
-    ledcSetup(1, PWM_FREQ, PWM_RES);
-    ledcAttachPin(ROLL_PIN, 1);
     
 }
 
