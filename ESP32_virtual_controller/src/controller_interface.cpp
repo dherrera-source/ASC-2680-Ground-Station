@@ -13,6 +13,9 @@
 #define PWM_FREQ       5000
 #define PWM_RES        13    // 13-bit resolution
 
+float DAC_NEUTRAL = 1.65f;
+uint16_t  PWM_NEUTRAL = 2.2f;
+
 float smoothedThrottle = 0.0f;
 float smoothedYaw = 0.0f;
 float smoothedPitch = 0.0f;
@@ -20,6 +23,12 @@ float smoothedRoll = 0.0f;
 
 float smooth(float current, float target, float factor = 0.2f) {
     return current + (target - current) * factor;
+}
+
+float mapInputToVoltage_PWM(float input) {
+    const float Vcenter = 2.2f;
+    const float Vrange = 1.65;
+    return Vcenter + (input * Vrange);
 }
 float mapInputToVoltage(float input) {
     const float Vcenter = 1.65f;
@@ -57,10 +66,10 @@ void initControllerInterface() {
     smoothedRoll     = 0.0f;
 
     // Center all axes on startup
-    writeVoltageDAC(THROTTLE_PIN, 1.65f);
-    writeVoltageDAC(PITCH_PIN, 1.65f);
-    writeVoltagePWM((0), YAW_PIN, 1.65f);
-    writeVoltagePWM((1), ROLL_PIN, 1.65f);
+    writeVoltageDAC(THROTTLE_PIN, DAC_NEUTRAL);
+    writeVoltageDAC(PITCH_PIN, DAC_NEUTRAL);
+    writeVoltagePWM((0), YAW_PIN, PWM_NEUTRAL);
+    writeVoltagePWM((1), ROLL_PIN, PWM_NEUTRAL);
 
     
 }
@@ -73,7 +82,7 @@ void setThrottle(float v) {
  // Yaw
 void setYaw(float v) {
     smoothedYaw = smooth(smoothedYaw, v);
-    writeVoltagePWM(0, YAW_PIN, mapInputToVoltage(smoothedYaw));
+    writeVoltagePWM(0, YAW_PIN, mapInputToVoltage_PWM(smoothedYaw));
 }
  // Pitch
 void setPitch(float v) {
@@ -84,7 +93,7 @@ void setPitch(float v) {
 // Roll
 void setRoll(float v) {
     smoothedRoll = smooth(smoothedRoll, v);
-    writeVoltagePWM(1, ROLL_PIN, mapInputToVoltage(smoothedRoll));
+    writeVoltagePWM(1, ROLL_PIN, mapInputToVoltage_PWM(smoothedRoll));
 }
 
 // Button press

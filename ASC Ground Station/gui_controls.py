@@ -85,17 +85,17 @@ class GroundStationGUI:
         
         self.handshake_active = True
         self.send_handshake_values(1,1)
-        time.sleep(0.3)
+        time.sleep(3.0)
         self.send_handshake_values(-1,-1)
-        time.sleep(0.3)
+        time.sleep(3.0)
         self.send_handshake_values(1,1)
-        time.sleep(0.3)
+        time.sleep(3.0)
 
         for _ in range(2):
             self.send_handshake_values(1,-1)
-            time.sleep(0.3)
+            time.sleep(3.0)
             self.send_handshake_values(-1,1)
-            time.sleep(0.3)
+            time.sleep(3.0)
 
         self.send_handshake_values(0,0)
         self.handshake_active = False

@@ -197,15 +197,20 @@ def get_manual_inputs():
     elif key_down(0x45): # E
         yaw = 1.0
 
+    #Arrow Pitch
+    if key_down(0x26):   # Up Arrow
+        pitch = 1.0
+    elif key_down(0x28): # Down Arrow
+        pitch = -1.0
     # Mouse pitch
-    pitch = -mouse_dy * 0.01
+    #pitch = -mouse_dy * 0.01
 
-    mouse_dx = 0
-    mouse_dy = 0
+    #mouse_dx = 0
+    #mouse_dy = 0
 
     print("inputs:", throttle, yaw, pitch, roll)
     print("KEY RAW:", ctypes.windll.user32.GetAsyncKeyState(0x57))
-    print("MOUSE RAW:", mouse_dy)
+    #print("MOUSE RAW:", mouse_dy)
 
     return throttle, yaw, pitch, roll
 
