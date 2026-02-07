@@ -13,8 +13,22 @@
 #define PWM_FREQ       5000
 #define PWM_RES        13    // 13-bit resolution
 
+// --- Neutral Voltages ---
 float DAC_NEUTRAL = 1.65f;
 uint16_t  PWM_NEUTRAL = 2.2f;
+
+// --- Neutral values ---
+float THROTTLE_CENTER   = 1.65f;
+float PITCH_CENTER      = 1.65f;
+float YAW_CENTER        = 2.2f;
+float ROLL_CENTER       = 2.2f;
+
+
+// -- Trim Offsets ---
+float trim_throttle = 0.0f;
+float trim_pitch   = 0.0f;
+float trim_yaw    = 0.0f;    
+float trim_roll   = 0.0f;    
 
 float smoothedThrottle = 0.0f;
 float smoothedYaw = 0.0f;
@@ -25,15 +39,35 @@ float smooth(float current, float target, float factor = 0.2f) {
     return current + (target - current) * factor;
 }
 
-float mapInputToVoltage_PWM(float input) {
-    const float Vcenter = 2.2f;
-    const float Vrange = 1.65;
-    return Vcenter + (input * Vrange);
-}
-float mapInputToVoltage(float input) {
-    const float Vcenter = 1.65f;
+float mapInputToVoltage(float input, float center, float trim) {
     const float Vrange = 1.65; // 3.3 / 2
-    return Vcenter + (input * Vrange);
+    return center + trim + (input * Vrange);
+}
+
+void adjustThrottleTrim(float delta) {
+    trim_throttle += delta;
+}
+void adjustPitchTrim(float delta) {
+    trim_pitch += delta;
+}
+void adjustYawTrim(float delta) {
+    trim_yaw += delta;
+}
+void adjustRollTrim(float delta) {
+    trim_roll += delta;
+}
+
+void setThrottleTrim(float value) {
+    trim_throttle = value;
+}
+void setPitchTrim(float value) {
+    trim_pitch = value;
+}
+void setYawTrim(float value) {
+    trim_yaw = value;
+}
+void setRollTrim(float value) {
+    trim_roll = value;
 }
 
 void writeVoltageDAC(int pin, float voltage) {
@@ -66,34 +100,35 @@ void initControllerInterface() {
     smoothedRoll     = 0.0f;
 
     // Center all axes on startup
-    writeVoltageDAC(THROTTLE_PIN, DAC_NEUTRAL);
-    writeVoltageDAC(PITCH_PIN, DAC_NEUTRAL);
-    writeVoltagePWM((0), YAW_PIN, PWM_NEUTRAL);
-    writeVoltagePWM((1), ROLL_PIN, PWM_NEUTRAL);
+    writeVoltageDAC(THROTTLE_PIN, mapInputToVoltage(smoothedThrottle, THROTTLE_CENTER, trim_throttle));
+    writeVoltageDAC(PITCH_PIN, mapInputToVoltage(smoothedPitch, PITCH_CENTER, trim_pitch));
+    writeVoltagePWM((0), YAW_PIN, mapInputToVoltage(smoothedYaw, YAW_CENTER, trim_yaw));
+    writeVoltagePWM((1), ROLL_PIN, mapInputToVoltage(smoothedRoll, ROLL_CENTER, trim_roll));
 
     
 }
-
+// --- Stick control functions ---
+// --- DAC ---
 // Throttle
 void setThrottle(float v) {
     smoothedThrottle = smooth(smoothedThrottle, v);
-    writeVoltageDAC(THROTTLE_PIN, mapInputToVoltage(smoothedThrottle));
-}
- // Yaw
-void setYaw(float v) {
-    smoothedYaw = smooth(smoothedYaw, v);
-    writeVoltagePWM(0, YAW_PIN, mapInputToVoltage_PWM(smoothedYaw));
+    writeVoltageDAC(THROTTLE_PIN, mapInputToVoltage(smoothedThrottle, THROTTLE_CENTER, trim_throttle));
 }
  // Pitch
 void setPitch(float v) {
     smoothedPitch = smooth(smoothedPitch, v);
-    writeVoltageDAC(PITCH_PIN, mapInputToVoltage(smoothedPitch));
+    writeVoltageDAC(PITCH_PIN, mapInputToVoltage(smoothedPitch, PITCH_CENTER, trim_pitch));
 }
-
+// --- PWM ---
+// Yaw
+void setYaw(float v) {
+    smoothedYaw = smooth(smoothedYaw, v);
+    writeVoltagePWM(0, YAW_PIN, mapInputToVoltage(smoothedYaw, YAW_CENTER, trim_yaw));
+}
 // Roll
 void setRoll(float v) {
     smoothedRoll = smooth(smoothedRoll, v);
-    writeVoltagePWM(1, ROLL_PIN, mapInputToVoltage_PWM(smoothedRoll));
+    writeVoltagePWM(1, ROLL_PIN, mapInputToVoltage(smoothedRoll, ROLL_CENTER, trim_roll));
 }
 
 // Button press

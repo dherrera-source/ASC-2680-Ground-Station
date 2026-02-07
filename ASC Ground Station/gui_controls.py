@@ -6,9 +6,68 @@ import time
 import send_controls
 from send_controls import shutdown_socket
 from send_controls import send_controls_packet
+from send_controls import send_trim, send_trim_set, TRIM_STEP, reset_all_trims
+class TrimControl(tk.Frame):
+    def __init__(self, parent, axis, send_trim, send_trim_set, *args, **kwargs):
+        super().__init__(parent, *args, **kwargs)
+        self.axis = axis
+        self.send_trim = send_trim
+        self.send_trim_set = send_trim_set
+
+        # Label
+        ttk.Label(self, text = f"{axis.capitalize()} Trim").pack()
+
+        #Slider (absolute trim)
+        self.slider = ttk.Scale(
+            self,
+            from_=-0.25,
+            to=0.25,
+            orient="horizontal",
+            command=self.on_slider
+        )
+        self.slider.set(0.0)
+        self.slider.pack(fill="x", padx=5)
+
+        # Buttons (incremental trim)
+        btn_frame = tk.Frame(self)
+        btn_frame.pack()
+
+        tk.Button(btn_frame, text="<", width = 3,
+                  command=lambda: self.adjust(-TRIM_STEP)).pack(side="left")
+        tk.Button(btn_frame, text=">", width = 3,
+                    command=lambda: self.adjust(+TRIM_STEP)).pack(side="left")
+
+        # Value label
+
+        self.value_label = ttk.Label(self, text="0.00 V")
+        self.value_label.pack()
+    
+    def adjust(self, delta):
+        print(f"Trim adjust {self.axis}: {delta}") #debug
+
+        self.send_trim(self.axis, delta)
+        new_val = self.slider.get() + delta
+        self.slider.set(new_val)
+        self.value_label.config(text=f"{new_val:.2f} V")
+
+    def on_slider(self, value):
+        print(f"Trim set{self.axis}: {value}")  #debug
+
+        if not hasattr(self, "value_label"):
+            return
+        
+        value = float(value)
+        self.send_trim_set(self.axis, value)
+        self.value_label.config(text=f"{value:.2f} V")
+
 class GroundStationGUI:
     def __init__(self, root):
         self.root = root
+
+        from send_controls import load_trim_config
+
+        self.trim_values = load_trim_config()
+
         self.scrcpy_process = None
         self.video_enabled = False
         self.handshake_active = False
@@ -39,6 +98,47 @@ class GroundStationGUI:
         self.button_frame = ttk.LabelFrame(self.root, text="Buttons")
         self.button_frame.pack(pady=10)
         self.button_labels = {}
+
+        # Trim Controls
+        trim_frame = ttk.LabelFrame(self.root, text = "Trim Controls")
+        trim_frame.pack(fill = "x", padx = 10, pady=10)
+
+        self.trim_throttle = TrimControl(trim_frame, "throttle", send_trim, send_trim_set)
+        self.trim_throttle.pack(fill="x")
+        self.trim_pitch = TrimControl(trim_frame, "pitch", send_trim, send_trim_set)
+        self.trim_pitch.pack(fill="x")
+        self.trim_yaw = TrimControl(trim_frame, "yaw", send_trim, send_trim_set)
+        self.trim_yaw.pack(fill="x")
+        self.trim_roll = TrimControl(trim_frame, "roll", send_trim, send_trim_set)
+        self.trim_roll.pack(fill="x")
+
+        self.trim_throttle.slider.configure(command=None) # Disable slider callback during setup
+        self.trim_pitch.slider.configure(command=None) # Disable slider callback during setup
+        self.trim_yaw.slider.configure(command=None) # Disable slider callback during setup
+        self.trim_roll.slider.configure(command=None) # Disable slider callback during setup
+
+        self.trim_throttle.slider.set(self.trim_values["throttle"])
+        self.trim_pitch.slider.set(self.trim_values["pitch"])
+        self.trim_yaw.slider.set(self.trim_values["yaw"])
+        self.trim_roll.slider.set(self.trim_values["roll"])
+
+        self.trim_throttle.slider.configure(command=self.trim_throttle.on_slider) #RE-enable callback
+        self.trim_pitch.slider.configure(command=self.trim_pitch.on_slider) #RE-enable callback
+        self.trim_yaw.slider.configure(command=self.trim_yaw.on_slider) #RE-enable callback
+        self.trim_roll.slider.configure(command=self.trim_roll.on_slider) #RE-enable callback
+
+        send_trim_set("throttle", self.trim_values["throttle"])
+        send_trim_set("pitch", self.trim_values["pitch"])       
+        send_trim_set("yaw", self.trim_values["yaw"])    
+        send_trim_set("roll", self.trim_values["roll"])
+
+        # Reset Trims Button
+        reset_btn = ttk.Button(
+            trim_frame,
+            text = "Reset All Trims",
+            command=self.reset_all_trims_gui
+        )
+        reset_btn.pack(pady=5)
 
         # --- Controller Connect ---
         self. sync_button = tk.Button(
@@ -73,6 +173,24 @@ class GroundStationGUI:
             lbl = ttk.Label(self.button_frame, textvariable=var)
             lbl.pack(anchor="w")
             self.button_labels[btn] = var
+
+    def reset_all_trims_gui(self):
+        # Reset stored values + send to ESP32
+        reset_all_trims()
+
+        # Update sliders visually
+
+        self.trim_throttle.slider.set(0.0)
+        self.trim_pitch.slider.set(0.0)
+        self.trim_yaw.slider.set(0.0)
+        self.trim_roll.slider.set(0.0)
+
+        #Update labels
+
+        self.trim_throttle.value_label.cnfig(text="0.00 V")
+        self.trim_pitch.value_label.config(text="0.00 V")
+        self.trim_yaw.value_label.config(text="0.00 V")
+        self.trim_roll.value_label.config(text="0.00 V")
 
     def run_connect_sequence(self):
         self.mode = "manual"

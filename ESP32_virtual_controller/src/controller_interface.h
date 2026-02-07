@@ -24,3 +24,15 @@ void setRoll(float v);
 // Example names: "takeoff", "Land"
 // --------------------------------------------
 void pressButton(const char* name);
+
+
+// --- Trim adjustment functions ---
+void adjustThrottleTrim(float delta);
+void adjustYawTrim(float delta);
+void adjustPitchTrim(float delta);
+void adjustRollTrim(float delta);
+
+void setThrottleTrim(float value);
+void setYawTrim(float value);
+void setPitchTrim(float value);
+void setRollTrim(float value);

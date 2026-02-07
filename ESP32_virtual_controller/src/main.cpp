@@ -39,6 +39,30 @@ void loop() {
       setPitch(pitch);
       setRoll(roll);
       
+      if (doc["type"] == "trim") {
+        const char* axis = doc["axis"];
+        float delta = doc["delta"];
+
+        if (strcmp(axis, "throttle") == 0) 
+          adjustThrottleTrim(delta);
+        else if (strcmp(axis, "yaw") == 0) 
+          adjustYawTrim(delta);
+        else if (strcmp(axis, "pitch") == 0) 
+          adjustPitchTrim(delta);
+        else if (strcmp(axis, "roll") == 0) 
+          adjustRollTrim(delta);
+        
+      }
+
+      if (doc["type"] == "trim_set") {
+        const char* axis = doc["axis"];
+        float value  = doc["value"];
+
+        if (strcmp(axis, "throttle") == 0) setThrottleTrim(value);
+        else if (strcmp(axis, "yaw") == 0) setPitchTrim(value);
+        else if (strcmp(axis, "pitch") == 0) setPitchTrim(value);
+        else if (strcmp(axis, "roll") == 0) setRollTrim(value);
+      }
       // Buttons
       if (doc["buttons"].is<JsonObject>()) {
         for (JsonPair kv : doc["buttons"].as<JsonObject>()) {
@@ -48,6 +72,8 @@ void loop() {
         }
       }
 
+      Serial.printf("Packet type: %s\n", doc["type"].as<const char*>());
+      
       // Rate-limited debug output
       if (millis() - lastDebug > 200) {
         Serial.println(" == ESP32 RECEIVED PACKET ==");

@@ -8,6 +8,9 @@ import msvcrt
 import ctypes
 import subprocess
 import threading
+import os
+
+TRIM_FILE = "trim_config.json"
 
 def launch_scrcpy():
     subprocess.Popen([r"C:\School\SCRCPY", "--max-size", "800"])
@@ -17,6 +20,25 @@ with open("button_map.json", "r") as f:
 
 from pynput import mouse
 
+def load_trim_config():
+    if not os.path.exists(TRIM_FILE):
+        return{"throttle":0.0, "yaw":0.0, "pitch":0.0, "roll":0.0}
+    
+    try:
+        with open(TRIM_FILE, "r") as f:
+            data = f.read().strip()
+            if not data:
+
+                return{"throttle":0.0, "yaw":0.0, "pitch":0.0, "roll":0.0}
+            return json.loads(data)
+    except json.JSONDecodeError:
+        # FIle exists but is corrupted
+        return{"throttle":0.0, "yaw":0.0, "pitch":0.0, "roll":0.0}
+    
+    
+def save_trim_config(trim_dict):
+    with open(TRIM_FILE, "w") as f:
+        json.dump(trim_dict, f, indent = 4)
 # --- Mouse Globals ---
 
 mouse_dx = 0
@@ -58,6 +80,33 @@ AUTO_STATE = {
     "phase": 0
 }
 
+TRIM_STEP = 0.1 # Volts per click
+
+def send_trim(axis, delta):
+    packet = {
+        "type": "trim",
+        "axis": axis,
+        "delta": delta
+    }
+    sock.sendto(json.dumps(packet).encode(), (ESP32_IP, ESP32_PORT))
+    print("Sending:", packet) #debug
+
+    trims = load_trim_config()
+    trims[axis] += delta
+    save_trim_config(trims)
+
+def send_trim_set(axis, value):
+    packet = {
+        "type": "trim_set",
+        "axis": axis,
+        "value": value
+    }
+    sock.sendto(json.dumps(packet).encode(), (ESP32_IP, ESP32_PORT))
+    print("Sending:", packet) #debug
+
+    trims = load_trim_config()
+    trims[axis] = value
+    save_trim_config(trims)
 # --- Button Library ---
 
 KEY_TO_BUTTON = {
@@ -161,6 +210,20 @@ def is_held(button_name, duration):
 def clear_buttons():
     button_state.clear()
 
+def reset_all_trims():
+    trims = {
+        "throttle": 0.0,
+        "yaw": 0.0,
+        "pitch": 0.0,
+        "roll": 0.0
+    }
+
+    save_trim_config(trims)
+
+    # Push zeros to ESP32
+
+    for axis in trims:
+        send_trim_set(axis, 0.0)
 # --- Mode Management ---
 
 mode = "manual"  # or "auto"
