@@ -1,6 +1,6 @@
 {
-  "auto_start": "Initiates autonomous takeoff sequence",
-  "auto_land": "Triggers autonomous landing routine",
+  "power": "Powers the transmitter on/off",
+  "takeoff_land": "Triggers takeoff or landing sequence",
   "speed": "Engages high-speed flight mode",
   "stunt": "Activates stunt maneuver mode",
   "photo": "Captures a photo (short press)",

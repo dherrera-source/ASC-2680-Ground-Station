@@ -134,10 +134,22 @@ void setRoll(float v) {
 // Button press
 void pressButton(const char* name) {
     int pin = getButtonPin(name);
-    if (pin < 0) return;  // Unknown button
 
+    Serial.print("[DEBUG] pressButton(): ");
+    Serial.print(name);
+    Serial.print(" -> pin ");
+    Serial.println(pin);
+
+    if (pin < 0) {
+        Serial.println("[DEBUG] ERROR: Unknown button name");
+        return;  // Unknown button
+    }
+    
+    Serial.println("[DEBUG] Pin LOW");
     digitalWrite(pin, LOW);
     delay(120);
+
+    Serial.println("[DEBUG] Pin HIGH");
     digitalWrite(pin, HIGH);
     
 }

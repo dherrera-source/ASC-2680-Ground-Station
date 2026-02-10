@@ -107,11 +107,12 @@ def send_trim_set(axis, value):
     trims = load_trim_config()
     trims[axis] = value
     save_trim_config(trims)
+
 # --- Button Library ---
 
 KEY_TO_BUTTON = {
-    "t": "auto_start",
-    "l": "auto_land",
+    "t": "power",
+    "l": "takeoff_land",
     "s": "speed",
     "x": "stunt",
     "v": "photo", # short press photo, long press video
@@ -126,21 +127,49 @@ KEY_TO_BUTTON = {
     "8": "trim_roll_right",
 }
 
-# --- Keyboard handler ---
-
+#-----------------------------------------------------------
+# --- INPUT HANDLING LAYER ---
+#------------------------------------------------------------
+# Keyboard handler
 def handle_manual_buttons():
     if msvcrt.kbhit():
         key = msvcrt.getwch().lower()
         if key in KEY_TO_BUTTON:
-            press(KEY_TO_BUTTON[key])
+            dispatch_button(KEY_TO_BUTTON[key])
 
-# --- Long-press handler ---
-
+# Long-press logic (shared)
 def handle_long_press_logic():
     #Hold 'photo' for 1 second to start video
     if is_held("photo", 1.0):
-        press("video_start")
+        dispatch_button("video_start")
         release("photo")
+
+# --- CENTRAL DISPATCHER ---
+
+speed_down = False
+stund_down = False
+
+def dispatch_button(name):
+    global speed_down, stunt_down
+
+    print(f"[DEBUG] Dispatching button: {name}")
+
+    # Track combo state
+    if name == "speed":
+        speed_down = True
+    if name == "stunt":
+        stunt_down = True
+
+    # Emergency stop combo
+    if speed_down and stund_down:
+        print("[DEBUG] Emergency stop triggered!")
+        press("emergency_stop")
+        speed_down = False
+        stunt_down = False
+        return
+    
+    # Normal button press
+    press(name)
 
 # --- Helpers ---
 
@@ -187,6 +216,13 @@ def send_controls(throttle, yaw, pitch, roll, buttons=None):
         _last_debug = time.time()
 
 def send_controls_packet(packet):
+
+    print(f"[DEBUG] Packet to ESP32: {packet}")
+
+    if packet.get("type") == "button":
+        sock.sendto(json.dumps(packet).encode(), (ESP32_IP, ESP32_PORT))
+        return
+    
     throttle = packet.get("throttle", 0)
     yaw = packet.get("yaw", 0)
     pitch = packet.get("pitch", 0)
@@ -197,6 +233,9 @@ def send_controls_packet(packet):
 
 def press(button_name):
     button_state[button_name] = {"pressed_at": time.time()}
+    print(f"[DEBUG] press() called for: {button_name}")
+    packet = {"type": "button", "name": button_name}
+    send_controls_packet(packet)
 
 def release(button_name):
     if button_name in button_state:

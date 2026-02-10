@@ -26,13 +26,26 @@ void loop() {
     StaticJsonDocument<256> doc;
     DeserializationError err = deserializeJson(doc, buffer);
 
+    if (err) {
+      Serial.print("[DEBUG] JSON parse failed: ");
+      Serial.println(err.c_str());
+      return;
+    }
+    
+    Serial.print("[DEBUG] Receive packet: ");
+    serializeJson(doc, Serial);
+    Serial.println();
+
     if (!err) {
       // Extract Values
       float throttle  = doc["throttle"] | 0.0f;
       float yaw       = doc["yaw"]      | 0.0f;
       float pitch     = doc["pitch"]    | 0.0f;
       float roll      = doc["roll"]     | 0.0f;
-
+      
+      // Extract type
+      const char* type = doc["type"];
+      
       // Apply to controller
       setThrottle(throttle);
       setYaw(yaw);
@@ -63,7 +76,19 @@ void loop() {
         else if (strcmp(axis, "pitch") == 0) setPitchTrim(value);
         else if (strcmp(axis, "roll") == 0) setRollTrim(value);
       }
-      // Buttons
+      
+      // NEW Buttons
+      if (type && strcmp(type, "button") == 0) {
+        const char* name = doc["name"];
+
+        Serial.print("[DEBUG] Button command received: ");
+        Serial.println(name);
+
+        pressButton(name);
+        return;
+      }
+
+      // OLD Buttons
       if (doc["buttons"].is<JsonObject>()) {
         for (JsonPair kv : doc["buttons"].as<JsonObject>()) {
           if (kv.value().as<int>() == 1) {

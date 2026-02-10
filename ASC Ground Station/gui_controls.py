@@ -4,9 +4,16 @@ import subprocess
 import threading
 import time
 import send_controls
-from send_controls import shutdown_socket
-from send_controls import send_controls_packet
-from send_controls import send_trim, send_trim_set, TRIM_STEP, reset_all_trims
+from send_controls import (
+    shutdown_socket,
+    send_controls_packet,
+    send_trim,
+    send_trim_set,
+    TRIM_STEP,
+    reset_all_trims,
+    dispatch_button,
+    KEY_TO_BUTTON,
+)
 class TrimControl(tk.Frame):
     def __init__(self, parent, axis, send_trim, send_trim_set, *args, **kwargs):
         super().__init__(parent, *args, **kwargs)
@@ -73,6 +80,10 @@ class GroundStationGUI:
         self.handshake_active = False
 
         self.create_widgets()
+        self.bind_keys()
+
+        self.last_button_label = tk.Label(self.root, text="Last Button: None", font=("Arial", 12))
+        self.last_button_Label.pack(pady=5)
 
         self.root.title("ASC-2680 Ground Station")
 
@@ -98,6 +109,21 @@ class GroundStationGUI:
         self.button_frame = ttk.LabelFrame(self.root, text="Buttons")
         self.button_frame.pack(pady=10)
         self.button_labels = {}
+
+        #Create GUI Buttons
+        self.control_frame = ttk.LabelFrame(self.root, text="Controls")
+        self.control_frame.pack(pady=10)
+
+        ttk.Button(self.control_frame, text="Power",
+                   command=lambda: self.on_button_press("power")).pack(fill="x")
+        ttk.Button(self.control_frame, text="Takeoff / Land",
+                   command=lambda: self.on_button_press("takeoff_land")).pack(fill="x")
+        ttk.Button(self.control_frame, text="Fly Speed",
+                   command=lambda: self.on_button_press("speed")).pack(fill="x")
+        ttk.Button(self.control_frame, text="Stunt Roll",
+                   command=lambda: self.on_button_press("stunt")).pack(fill="x")
+        
+        self.root.bind("<Key>", self.on_key_press)
 
         # Trim Controls
         trim_frame = ttk.LabelFrame(self.root, text = "Trim Controls")
@@ -166,7 +192,19 @@ class GroundStationGUI:
         )
         self.shutdown_buttton.pack(pady=5)
         print("CREATE WIDGETS END")
+
+    def on_button_press(self, name):
+        self.last_button_label.config(text=f"Last Button: {name}")
+        dispatch_button(name)
     
+    def bind_keys(self):
+        self.root.bind("<Key>", self.on_key_press)
+
+    def on_key_press(self, event):
+        key = event.keysyym.lower()
+        if key in KEY_TO_BUTTON:
+            dispatch_button(KEY_TO_BUTTON[key])
+
     def load_buttons(self, button_map):
         for btn in button_map.keys():
             var = tk.StringVar(value=f"{btn}: OFF")
