@@ -3,8 +3,8 @@
 #include <Arduino.h>
 
 // --- Pin assignments ---
-#define THROTTLE_PIN  25  // DAC1
-#define PITCH_PIN     26  // DAC2
+#define THROTTLE_PIN  26  // DAC1
+#define PITCH_PIN     25  // DAC2
 
 #define YAW_PIN       14  // PWM channel 0
 #define ROLL_PIN      27  // PWM channel 1
@@ -145,12 +145,18 @@ void pressButton(const char* name) {
         return;  // Unknown button
     }
     
-    Serial.println("[DEBUG] Pin LOW");
+    // Idle state
+    Serial.println("[DEBUG] Pin LOW (idle)");
     digitalWrite(pin, LOW);
-    delay(120);
-
-    Serial.println("[DEBUG] Pin HIGH");
+    
+    // Press = HIGH
+    Serial.println("[DEBUG] Pin HIGH (press)");
     digitalWrite(pin, HIGH);
+    delay(500);
+
+    // Return to idle
+    Serial.println("[DEBUG] Pin LOW (end)");
+    digitalWrite(pin, LOW);
     
 }
 

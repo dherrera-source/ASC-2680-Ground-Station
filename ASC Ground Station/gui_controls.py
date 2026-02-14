@@ -71,6 +71,7 @@ class GroundStationGUI:
     def __init__(self, root):
         self.root = root
 
+        self.pending_buttons = {}
         from send_controls import load_trim_config
 
         self.trim_values = load_trim_config()
@@ -140,6 +141,9 @@ class GroundStationGUI:
         self.shutdown_buttton.pack(pady=5)
         print("CREATE WIDGETS END")
 
+        self.last_button_label = ttk.Label(self.left_frame, text="Last Button: None")
+        self.last_button_label.pack(pady=5)
+
     def create_center_widgets(self):
                 # Trim Controls
         trim_frame = ttk.LabelFrame(self.center_frame, text = "Trim Controls")
@@ -200,20 +204,22 @@ class GroundStationGUI:
                    command=lambda: self.on_button_press("speed")).pack(fill="x")
         ttk.Button(self.control_frame, text="Stunt Roll",
                    command=lambda: self.on_button_press("stunt")).pack(fill="x")
-        
-        self.root.bind("<Key>", self.on_key_press)
+        ttk.Button(self.control_frame, text="EMERGENCY STOP",
+                   command=lambda: self.on_button_press("emergency")).pack(fill="x")
 
     def on_button_press(self, name):
+        self.pending_buttons[name] = 1
         self.last_button_label.config(text=f"Last Button: {name}")
-        dispatch_button(name)
     
     def bind_keys(self):
         self.root.bind("<Key>", self.on_key_press)
 
     def on_key_press(self, event):
-        key = event.keysyym.lower()
+        key = event.keysym.lower()
         if key in KEY_TO_BUTTON:
-            dispatch_button(KEY_TO_BUTTON[key])
+            name = KEY_TO_BUTTON[key]
+            self.pending_buttons[name] = 1
+            self.last_button_label.config(text=f"Last Button: {name}")
 
     def load_buttons(self, button_map):
         for btn in button_map.keys():

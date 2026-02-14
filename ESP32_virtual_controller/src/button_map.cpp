@@ -4,10 +4,10 @@
 // Define your button GPIO pins here
 //(Replace these with your actual wiring)
 //-------------------------------------------
-#define BTN_AUTO_START_LAND       12
-#define BTN_AUTO_LAND             13
-#define BTN_SPEED                 33
-#define BTN_STUNT                 32
+#define BTN_POWER                 32
+#define BTN_TAKEOFF_LAND          33
+#define BTN_SPEED                 23
+#define BTN_STUNT                 22
 #define BTN_PHOTO                 2
 
 
@@ -15,11 +15,11 @@
 // Button lookup table
 // -------------------------------------------
 ButtonMap buttons[] = {
-    {"power",               12},
-    {"takeoff_land",        13},
-    {"speed",               33},
-    {"stunt",               32},
-    {"photo",               2},
+    {"power",               BTN_POWER},
+    {"takeoff_land",        BTN_TAKEOFF_LAND},
+    {"speed",               BTN_SPEED},
+    {"stunt",               BTN_STUNT},
+    {"photo",               BTN_PHOTO},
     // Add more as needed
 };
 

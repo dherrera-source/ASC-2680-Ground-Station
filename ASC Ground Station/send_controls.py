@@ -147,7 +147,7 @@ def handle_long_press_logic():
 # --- CENTRAL DISPATCHER ---
 
 speed_down = False
-stund_down = False
+stunt_down = False
 
 def dispatch_button(name):
     global speed_down, stunt_down
@@ -161,7 +161,7 @@ def dispatch_button(name):
         stunt_down = True
 
     # Emergency stop combo
-    if speed_down and stund_down:
+    if speed_down and stunt_down:
         print("[DEBUG] Emergency stop triggered!")
         press("emergency_stop")
         speed_down = False
@@ -176,15 +176,22 @@ def dispatch_button(name):
 def clamp(v, lo=-1.0, hi=1.0):
     return max(lo, min(hi, v))
 
+def process_controls(throttle, yaw, pitch, roll):
+    throttle = clamp(throttle)
+    yaw = clamp(yaw)
+    pitch = clamp(pitch)
+    roll = clamp(roll)
+    return throttle, yaw, pitch, roll
+
 def build_packet(throttle, yaw, pitch, roll, buttons=None):
     if buttons is None:
         buttons = {}
     
     packet = {
-        "throttle": clamp(throttle),
-        "yaw": clamp(yaw),
-        "pitch": clamp(pitch),
-        "roll": clamp(roll),
+        "throttle": throttle,
+        "yaw": yaw,
+        "pitch": pitch,
+        "roll": roll,
         "buttons": buttons,
         "t": time.time()
     }
@@ -219,17 +226,11 @@ def send_controls_packet(packet):
 
     print(f"[DEBUG] Packet to ESP32: {packet}")
 
-    if packet.get("type") == "button":
-        sock.sendto(json.dumps(packet).encode(), (ESP32_IP, ESP32_PORT))
-        return
-    
-    throttle = packet.get("throttle", 0)
-    yaw = packet.get("yaw", 0)
-    pitch = packet.get("pitch", 0)
-    roll = packet.get("roll", 0)
-    buttons = packet.get("buttons", {})
+    try:
+        sock.sendto(packet, (ESP32_IP, ESP32_PORT))  
+    except Exception as e:
+        print("send error:", e)
 
-    send_controls(throttle, yaw, pitch, roll, buttons)
 
 def press(button_name):
     button_state[button_name] = {"pressed_at": time.time()}
@@ -269,6 +270,9 @@ mode = "manual"  # or "auto"
 
 # --- Manual Input (PLaceholder) ---
 
+def key_down(vk):
+    return(ctypes.windll.user32.GetAsyncKeyState(vk) & 0x8000) != 0
+
 def get_manual_inputs():
     global mouse_dx, mouse_dy
 
@@ -276,10 +280,6 @@ def get_manual_inputs():
     yaw = 0.0
     pitch = 0.0
     roll = 0.0
-
-    # Windows key state checker
-    def key_down(vk):
-        return ctypes.windll.user32.GetAsyncKeyState(vk) & 0x8000
 
     # W / S throttle
     if key_down(0x57):   # W
@@ -396,20 +396,37 @@ def main(gui):
             pass
         
         else:
-            if mode =="manual":
-                handle_manual_buttons()
+            if mode == "manual":
+                # Raw inputs -> logical axes
                 throttle, yaw, pitch, roll = get_manual_inputs()
-        
+
             else:
+                # Raw Inputs from auto flight engine-> logical axes
                 throttle, yaw, pitch, roll = auto_flight_engine()
 
             # --- Long-press evaluation (shared) ---
-            handle_long_press_logic()
+        handle_long_press_logic()
+        # Shared Normalization / Clamping
+        # Clamp Axes
+        throttle, yaw, pitch, roll = process_controls(throttle, yaw, pitch, roll)   
 
-        # Send to ESP32
+        # Collect GUI button presses
+        buttons = gui.pending_buttons.copy()
+        gui.pending_buttons.clear()
 
-        print("Sending:", {name:1 for name in button_state.keys()})
-        send_controls(throttle, yaw, pitch, roll)  
+        # Priority handling
+        if "emergency_stop" in buttons:
+            buttons = {"emergency_stop": 1}
+            throttle = yaw = pitch = roll = 0.0
+
+        # Combo logic: speed + stunt = emergency stop
+        elif "speed" in buttons and "stunt" in buttons:
+            buttons = {"emergency_stop": 1}
+            throttle = yaw = pitch = roll = 0.0
+        
+        # Build + send packet
+        packet = build_packet(throttle, yaw, pitch, roll, buttons)
+        send_controls_packet(packet)  
 
         gui.update(throttle, yaw, pitch, roll, mode, button_state)
 
