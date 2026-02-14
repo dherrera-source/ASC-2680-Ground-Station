@@ -10,18 +10,18 @@
 #define ROLL_PIN      27  // PWM channel 1
 
 // --- PWM settings ---
-#define PWM_FREQ       5000
-#define PWM_RES        13    // 13-bit resolution
+#define PWM_FREQ       10000
+#define PWM_RES        10    // 10-bit resolution
 
 // --- Neutral Voltages ---
 float DAC_NEUTRAL = 1.65f;
-uint16_t  PWM_NEUTRAL = 2.2f;
+float PWM_NEUTRAL = 1.65f;
 
 // --- Neutral values ---
 float THROTTLE_CENTER   = 1.65f;
 float PITCH_CENTER      = 1.65f;
-float YAW_CENTER        = 2.2f;
-float ROLL_CENTER       = 2.2f;
+float YAW_CENTER        = 1.65f;
+float ROLL_CENTER       = 1.65f;
 
 
 // -- Trim Offsets ---
@@ -78,7 +78,7 @@ void writeVoltageDAC(int pin, float voltage) {
 
 void writeVoltagePWM(int channel, int pin, float voltage) {
     voltage = constrain(voltage, 0.0f, 3.3f);
-    int duty = (voltage / 3.3f) * 8191;  //13-bit PWM
+    int duty = (voltage / 3.3f) * 1024;  //10-bit PWM
     ledcWrite(channel, duty);
 }
 

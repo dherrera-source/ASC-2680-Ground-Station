@@ -4,22 +4,22 @@
 // Define your button GPIO pins here
 //(Replace these with your actual wiring)
 //-------------------------------------------
-#define BTN_AUTO_START_LAND       34
-#define BTN_AUTO_LAND        35
-#define BTN_SPEED            33
-#define BTN_STUNT            32
-#define BTN_PHOTO            39
+#define BTN_AUTO_START_LAND       12
+#define BTN_AUTO_LAND             13
+#define BTN_SPEED                 33
+#define BTN_STUNT                 32
+#define BTN_PHOTO                 2
 
 
 // -------------------------------------------
 // Button lookup table
 // -------------------------------------------
 ButtonMap buttons[] = {
-    {"power",               34},
-    {"takeoff_land",        35},
+    {"power",               12},
+    {"takeoff_land",        13},
     {"speed",               33},
     {"stunt",               32},
-    {"photo",               39},
+    {"photo",               2},
     // Add more as needed
 };
 
@@ -52,7 +52,7 @@ int getButtonPin(const char* name) {
 void initButtonPins() {
     for (int i = 0; i < BUTTON_COUNT; i++) {
         pinMode(buttons[i].pin, OUTPUT); 
-        digitalWrite(buttons[i].pin, HIGH); //active-low idle state
+        digitalWrite(buttons[i].pin, LOW); //active-low idle state
     }
 }
 

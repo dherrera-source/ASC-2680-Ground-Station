@@ -79,20 +79,28 @@ class GroundStationGUI:
         self.video_enabled = False
         self.handshake_active = False
 
-        self.create_widgets()
         self.bind_keys()
-
-        self.last_button_label = tk.Label(self.root, text="Last Button: None", font=("Arial", 12))
-        self.last_button_Label.pack(pady=5)
 
         self.root.title("ASC-2680 Ground Station")
 
-    def create_widgets(self):
+        # --- Create Layout Zones ---
+        self.left_frame = tk.Frame(root)
+        self.center_frame = tk.Frame(root)
+        self.right_frame = tk.Frame(root)
 
-        print("CREATE WIDGETS START")
+        self.left_frame.grid(row=0, column=0, sticky = "n", padx=10, pady=10)
+        self.center_frame.grid(row=0, column=1, sticky="n", padx=10, pady=10)
+        self.right_frame.grid(row=0, column=2, sticky="n", padx=10, pady=10)
+
+        self.create_left_widgets()
+        self.create_center_widgets()
+        self.create_right_widgets()
+
+    def create_left_widgets(self):
+        print("CREATE LEFT WIDGETS START")
         # Mode label
         self.mode_var = tk.StringVar(value="Mode: Manual")
-        ttk.Label(self.root, textvariable=self.mode_var, font=("Arial, 14")).pack(pady=5)
+        ttk.Label(self.left_frame, textvariable=self.mode_var, font=("Arial, 14")).pack(pady=5)
 
         #Stick readouts
         self.throttle_var = tk.StringVar(value="Throttle: 0.00")
@@ -100,33 +108,41 @@ class GroundStationGUI:
         self.pitch_var = tk.StringVar(value="Pitch: 0.00")
         self.roll_var = tk.StringVar(value="Roll: 0.00")
 
-        ttk.Label(self.root, textvariable=self.throttle_var).pack()
-        ttk.Label(self.root, textvariable=self.yaw_var).pack()
-        ttk.Label(self.root, textvariable=self.pitch_var).pack()
-        ttk.Label(self.root, textvariable=self.roll_var).pack()
+        ttk.Label(self.left_frame, textvariable=self.throttle_var).pack()
+        ttk.Label(self.left_frame, textvariable=self.yaw_var).pack()
+        ttk.Label(self.left_frame, textvariable=self.pitch_var).pack()
+        ttk.Label(self.left_frame, textvariable=self.roll_var).pack()
 
-        # Button State
-        self.button_frame = ttk.LabelFrame(self.root, text="Buttons")
-        self.button_frame.pack(pady=10)
-        self.button_labels = {}
+        # --- Controller Connect ---
+        self. sync_button = tk.Button(
+            self.left_frame,
+            text="Controller Connect",
+            command=self.run_connect_sequence
+        )
+        self.sync_button.pack(pady=5)
 
-        #Create GUI Buttons
-        self.control_frame = ttk.LabelFrame(self.root, text="Controls")
-        self.control_frame.pack(pady=10)
+        # --- Video Feed Toggle Button ---
+        self.video_button = tk.Button(
+            self.left_frame,
+            text="Enable Video Feed",
+            command=self.toggle_video_feed
+        )
+        self.video_button.pack(pady=5)
 
-        ttk.Button(self.control_frame, text="Power",
-                   command=lambda: self.on_button_press("power")).pack(fill="x")
-        ttk.Button(self.control_frame, text="Takeoff / Land",
-                   command=lambda: self.on_button_press("takeoff_land")).pack(fill="x")
-        ttk.Button(self.control_frame, text="Fly Speed",
-                   command=lambda: self.on_button_press("speed")).pack(fill="x")
-        ttk.Button(self.control_frame, text="Stunt Roll",
-                   command=lambda: self.on_button_press("stunt")).pack(fill="x")
-        
-        self.root.bind("<Key>", self.on_key_press)
+        # Shutdown Button
+        self.shutdown_buttton = tk.Button(
+            self.left_frame,
+            text="SHUTDOWN PROGRAM",
+            command=self.shutdown_program,
+            bg="#b33939",
+            fg="white"
+        )
+        self.shutdown_buttton.pack(pady=5)
+        print("CREATE WIDGETS END")
 
-        # Trim Controls
-        trim_frame = ttk.LabelFrame(self.root, text = "Trim Controls")
+    def create_center_widgets(self):
+                # Trim Controls
+        trim_frame = ttk.LabelFrame(self.center_frame, text = "Trim Controls")
         trim_frame.pack(fill = "x", padx = 10, pady=10)
 
         self.trim_throttle = TrimControl(trim_frame, "throttle", send_trim, send_trim_set)
@@ -166,32 +182,26 @@ class GroundStationGUI:
         )
         reset_btn.pack(pady=5)
 
-        # --- Controller Connect ---
-        self. sync_button = tk.Button(
-            self.root,
-            text="Controller Connect",
-            command=self.run_connect_sequence
-        )
-        self.sync_button.pack(pady=5)
+    def create_right_widgets(self):
+        # Button State
+        self.button_frame = ttk.LabelFrame(self.right_frame, text="Buttons")
+        self.button_frame.pack(pady=10)
+        self.button_labels = {}
 
-        # --- Video Feed Toggle Button ---
-        self.video_button = tk.Button(
-            self.root,
-            text="Enable Video Feed",
-            command=self.toggle_video_feed
-        )
-        self.video_button.pack(pady=5)
+        #Create GUI Buttons
+        self.control_frame = ttk.LabelFrame(self.right_frame, text="Controls")
+        self.control_frame.pack(pady=10)
 
-        # Shutdown Button
-        self.shutdown_buttton = tk.Button(
-            self.root,
-            text="SHUTDOWN PROGRAM",
-            command=self.shutdown_program,
-            bg="#b33939",
-            fg="white"
-        )
-        self.shutdown_buttton.pack(pady=5)
-        print("CREATE WIDGETS END")
+        ttk.Button(self.control_frame, text="Power",
+                   command=lambda: self.on_button_press("power")).pack(fill="x")
+        ttk.Button(self.control_frame, text="Takeoff / Land",
+                   command=lambda: self.on_button_press("takeoff_land")).pack(fill="x")
+        ttk.Button(self.control_frame, text="Fly Speed",
+                   command=lambda: self.on_button_press("speed")).pack(fill="x")
+        ttk.Button(self.control_frame, text="Stunt Roll",
+                   command=lambda: self.on_button_press("stunt")).pack(fill="x")
+        
+        self.root.bind("<Key>", self.on_key_press)
 
     def on_button_press(self, name):
         self.last_button_label.config(text=f"Last Button: {name}")
