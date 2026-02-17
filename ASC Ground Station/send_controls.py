@@ -1,7 +1,8 @@
 import socket
 import json
 import time
-import sys
+import sys , os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import select
 import tkinter as tk
 import msvcrt
@@ -152,7 +153,7 @@ stunt_down = False
 def dispatch_button(name):
     global speed_down, stunt_down
 
-    print(f"[DEBUG] Dispatching button: {name}")
+    #print(f"[DEBUG] Dispatching button: {name}")
 
     # Track combo state
     if name == "speed":
@@ -224,7 +225,7 @@ def send_controls(throttle, yaw, pitch, roll, buttons=None):
 
 def send_controls_packet(packet):
 
-    print(f"[DEBUG] Packet to ESP32: {packet}")
+    #print(f"[DEBUG] Packet to ESP32: {packet}")
 
     try:
         sock.sendto(packet, (ESP32_IP, ESP32_PORT))  
@@ -234,7 +235,7 @@ def send_controls_packet(packet):
 
 def press(button_name):
     button_state[button_name] = {"pressed_at": time.time()}
-    print(f"[DEBUG] press() called for: {button_name}")
+    #print(f"[DEBUG] press() called for: {button_name}")
     packet = {"type": "button", "name": button_name}
     send_controls_packet(packet)
 

@@ -80,7 +80,7 @@ void loop() {
       pressButton(name);
     }
 
-    /*
+
     // OLD Buttons
     if (doc["buttons"].is<JsonObject>()) {
       for (JsonPair kv : doc["buttons"].as<JsonObject>()) {
@@ -89,7 +89,7 @@ void loop() {
         }
       }
     }
-    */
+
     
     
     Serial.printf("Packet type: %s\n", type);

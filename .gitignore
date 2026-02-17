@@ -1,0 +1,34 @@
+# -------------------------
+# PYTHON VIRTUAL ENVIRONMENTS
+# -------------------------
+yolo_env/
+venv/
+*/yolo_env/
+*/venv/
+
+# -------------------------
+# PYTHON CACHE FILES
+# -------------------------
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# -------------------------
+# BUILD / DIST ARTIFACTS
+# -------------------------
+build/
+dist/
+*.egg-info/
+
+# -------------------------
+# EDITOR / OS JUNK
+# -------------------------
+.vscode/
+.DS_Store
+Thumbs.db
+
+# -------------------------
+# LOGS
+# -------------------------
+*.log

@@ -4,6 +4,11 @@ import subprocess
 import threading
 import time
 import send_controls
+import sys
+import os
+#print("CWD:", os.getcwd()) #debug
+import pygetwindow as gw
+#print("WINDOW TITLES:", gw.getAllTitles()) #debug
 from send_controls import (
     shutdown_socket,
     send_controls_packet,
@@ -79,8 +84,12 @@ class GroundStationGUI:
         self.scrcpy_process = None
         self.video_enabled = False
         self.handshake_active = False
+        self.video_feed_enabled = False
+        self.yolo_overlay_enabled = False
 
         self.bind_keys()
+
+        self.video_enabled = False
 
         self.root.title("ASC-2680 Ground Station")
 
@@ -272,6 +281,22 @@ class GroundStationGUI:
         self.send_handshake_values(0,0)
         self.handshake_active = False
 
+    def toggle_yolo_overlay(self):
+        self.yolo_overlay_enabled = not self.yolo_overlay_enabled
+    
+    def get_video_toggle(self):
+        return self.video_feed_enabled
+
+    def get_scrcpy_window(self):
+        # Wait up to 2 seconds for scrcpy to appear
+
+        for _ in range(20):
+            windows = gw.getWindowsWithTitle("scrcpy")
+            if windows:
+                return windows[0]
+            time.sleep(0.1)
+        return None
+    
     def send_handshake_values(self, throttle, pitch):
         send_controls_packet({
             "throttle": throttle,
@@ -282,25 +307,146 @@ class GroundStationGUI:
         })
 
     def toggle_video_feed(self):
-        if not self.video_enabled:
-            try:
-                self.scrcpy_process = subprocess.Popen(
-                    [r"C:\School\SCRCPY\scrcpy-win64-v3.3.4\scrcpy.exe", 
-                     "--max-size", "1080"]
-                )
-                self.video_button.config(text="Disable Video Feed")
-                self.video_enabled = True
-            except Exception as e:
-                print(f"Failed to start scrcpy: {e}")
-        
-        else:
-            if self.scrcpy_process:
-                self.scrcpy_process.terminate()
-                self.scrcpy_process = None
+
+        # DISABLE VIDEO FEED
+        if self.video_enabled:
+            if hasattr(self, "yolo_process") and self.yolo_process:
+                try:
+                    self.yolo_process.terminate()
+                except Exception as e:
+                    print(f"Error terminating YOLO process: {e}")
+                finally:
+                    self.yolo_process = None
 
             self.video_button.config(text="Enable Video Feed")
             self.video_enabled = False
+            return
 
+        # ENABLE VIDEO FEED
+        try:
+            self.yolo_process = subprocess.Popen([
+                r"C:\Users\david\ground_station_local\yolo_env\Scripts\python.exe",
+                r"C:\Users\david\ground_station_local\ASC Ground Station\YoloTrack\stream_to_YOLO_out.py"
+            ])
+
+            self.video_button.config(text="Disable Video Feed")
+            self.video_enabled = True
+
+        except Exception as e:
+            print(f"Failed to start video feed: {e}")
+            self.video_enabled = False
+            
+
+    def wait_for_scrcpy_window(self, timeout = 5.0):
+        start = time.time()
+
+        while time.time() - start < timeout:
+            titles = gw.getAllTitles()
+            
+            for t in titles:
+                if "scrcpy" in t.lower() or "sm-s936u" in t.lower():
+                    wins = gw.getWindowsWithTitle(t)
+                    if wins: 
+                        return wins[0]
+            
+            time.sleep(0.1)
+
+        return None
+    
+    def start_yolo(self):
+        try:
+            yolo_python = r"C:\Users\david\yolo_env\Scripts\python.exe"
+            yolo_script = r"C:\Users\david\ground_station_local\YoloTrack\YOLOtrackV1.py"
+
+            self.yolo_process = subprocess.Popen(
+                [yolo_python, yolo_script],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE
+            )
+
+            print("YOLO started successfully.")
+
+        except Exception as e:
+            print(f"Failed to start YOLO: {e}")
+            self.yolo_process = None
+
+    def stop_yolo(self):
+        if hasattr(self, "yolo_process") and self.yolo_process:
+            try:
+                self.yolo_process.terminate()
+                self.yolo_process.wait(timeout=1)
+            except Exception:
+                self.yolo_process.kill()
+            self.yolo_process = None
+    
+    def create_video_controls_window(self):
+        self.video_controls = tk.Toplevel(self.root)
+        self.video_controls.title("Video Controls")
+        self.video_controls.attributes("-topmost", True)
+        self.video_controls.geometry("250x150+100+100")
+
+        #Add your overlay toggles, dropdowns, etc.
+        yolo_button = tk.Button(
+            self.video_controls, 
+            text = "Toggle YOLO Overlay",
+            command=self.toggle_yolo_overlay
+        )
+        yolo_button.pack()
+
+    def position_overlay_over_scrcpy(self, scrcpy_win):
+        x = scrcpy_win.left
+        y = scrcpy_win.top
+        width = scrcpy_win.width
+
+        overlay_width = 200
+        overlay_height = 100
+
+        overlay_x = x + (width - overlay_width) // 2
+        overlay_y = y + 20
+
+        self.overlay_win.geometry(f"{overlay_width}x{overlay_height}+{overlay_x}+{overlay_y}")
+    
+    def create_overlay_window(self):
+        print("OVerlay window: creating...")
+        self.overlay_win = tk.Toplevel(self.root)
+        self.overlay_win.overrideredirect(True) # No title bar
+
+        self.overlay_win.attributes("-topmost", True) # Always on top
+        self.overlay_win.attributes("-alpha", 0.85)   # Slight transparency
+
+        # Position it manually (later we auto-detect scrcpy window)
+
+        self.overlay_win.geometry("200x100+100+100")
+
+        # Dropdown menu
+
+        options = ["Enable Overlays", "Disable Overlays", "Settings"]
+        self.dropdown_var = tk.StringVar(value=options[0])
+        dropdown = tk.OptionMenu(self.overlay_win, self.dropdown_var, *options)
+        dropdown.pack()
+    
+    def toggle_overlay(self):
+        if not self.overlay_visible:
+            self.create_overlay_window()
+            self.overlay_window()
+            self.overlay_win.deiconify()
+            self.overlay_button.config(text="Hide Overlay")
+            self.overlay_visible = True
+        else:
+            if hasattr(self, "overlay_win"):
+                self.overlay_win.withdraw()
+            self.overlay_button.config(text="Show Overlay")
+            self.overlay_visible = False
+        
+    def start_drag(self, event):
+        self.drag_x = event.x
+        self.drag_y = event.y
+    
+    def do_drag(self, event):
+        x = self.overlay_win.winfo_x() + (event.x - self.drag_x)
+        y = self.overlay_win.winfo_y() + (event.y - self.drag_y)
+        self.overlay_win.geometry(f"+{x}+{y}")
+    
     def shutdown_program(self):
         import os
         # Kill SCRCPY
@@ -317,6 +463,10 @@ class GroundStationGUI:
         #Destroy GUI window
         try:
             self.root.destroy()
+        except:
+            pass
+        try:
+            self.stop_yolo()
         except:
             pass
 
