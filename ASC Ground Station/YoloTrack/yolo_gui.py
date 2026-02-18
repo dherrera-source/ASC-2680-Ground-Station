@@ -71,10 +71,6 @@ class ControlGUI:
         self.custom_text.pack(fill="x", padx=10)
         self.custom_text.bind("<KeyRelease>", self.update_custom_text)
 
-        # -----------------------------
-        # RUN GUI LOOP IN THREAD
-        # -----------------------------
-        threading.Thread(target=self.root.mainloop, daemon=True).start()
 
     # -----------------------------
     # CALLBACKS
