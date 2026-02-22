@@ -3,11 +3,32 @@ from ultralytics import YOLO
 import time
 from yolo_gui import ControlGUI
 import threading
+import subprocess
+import os
 
 # -----------------------------
 # STREAM SETTINGS
 # -----------------------------
-STREAM_URL = "http://192.168.4.24:8080/stream.mjpeg"
+STREAM_URL = "http://127.0.0.1:9090/stream.mjpeg"
+
+#------------------------------
+# ADB REVERSE (USB TUNNEL)
+# -----------------------------
+
+ADB_FOLDER = r"C:\School\SCRCPY\scrcpy-win64-v2.4"
+ADB = os.path.join(ADB_FOLDER, "adb.exe")
+
+def ensure_adb_reverse():
+    try:
+        # Map laptop:8080 -> phone: 8080
+        subprocess.run([ADB, "reverse", "tcp:8080", "tcp:8080"], cwd=ADB_FOLDER)
+
+        # Optional: print active mappings
+
+        out = subprocess.run([ADB, "reverse", "--list"], capture_output=True, text=True)
+        print("ADB reverse mappings:\n", out.stdout)
+    except Exception as e:
+        print("ADB reverse failed:", e)
 
 # -----------------------------
 # SHARED SETTINGS DICT
@@ -89,8 +110,10 @@ settings = {
 }
 
 # -----------------------------
-# YOLO + BUTE TRACK LOOP (THREAD)
+# YOLO + BYTE TRACK LOOP (THREAD)
 def run_yolo_loop(settings):
+    ensure_adb_reverse()
+
     model = YOLO(settings["model"])
 
     cap = cv2.VideoCapture(STREAM_URL)
@@ -103,6 +126,8 @@ def run_yolo_loop(settings):
     prev_time = time.time()
 
     cap.set(cv2.CAP_PROP_BUFFERSIZE, 1) # reduce latency
+
+    print("Latency reduction settings applied. Starting main loop...")
 
     while True:
         ret, frame = cap.read()
