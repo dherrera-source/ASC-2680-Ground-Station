@@ -2,14 +2,14 @@
 
 // Ultrasonic sensors
 
-#define US_LEFT_TRIG    19
-#define US_LEFT_ECHO    21
+#define US_LEFT_TRIG    14
+#define US_LEFT_ECHO    27
 
 #define US_RIGHT_TRIG   22
 #define US_RIGHT_ECHO   23
 
-#define GPS_RX_PIN 16  // ESP32 RX  <- GPS TX
-#define GPS_TX_PIN 17  // ESP32 TX  -> GPS RX
+#define GPS_RX_PIN 3  // ESP32 RX  <- GPS TX
+#define GPS_TX_PIN 1  // ESP32 TX  -> GPS RX
 
 // =========================
 // Battery Monitoring Pins

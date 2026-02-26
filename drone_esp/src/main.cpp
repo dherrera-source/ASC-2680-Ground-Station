@@ -34,6 +34,7 @@ void setup() {
     Logger::info("Telemetry system initialized");
 
     GPS::begin();
+    delay(200);
     Logger::info("GPS initialized");
 
     batteryMain.begin();

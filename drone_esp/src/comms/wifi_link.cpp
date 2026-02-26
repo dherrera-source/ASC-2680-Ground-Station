@@ -3,8 +3,8 @@
 #include "../utils/logger.h"
 #include <WiFiUdp.h>
 
-static const char* SSID = "Cornuta";
-static const char* PASS = "15418Cornuta";
+static const char* SSID = "Verizon_P7CDZW";
+static const char* PASS = "wise5haw8deify";
 
 static WiFiUDP udp;
 

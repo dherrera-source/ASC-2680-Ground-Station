@@ -36,6 +36,9 @@ void update() {
         return;
     }
 
+    // Record the time we received valid GPS bytes
+    lastUpdateTime - millis();
+
     if (gps.location.isUpdated()) {
         lastFix.lat = gps.location.lat();
         lastFix.lon = gps.location.lng();

@@ -6,7 +6,7 @@ Ultrasonic::Ultrasonic(int trigPin, int echoPin)
 
 void Ultrasonic::begin() {
     pinMode(trig, OUTPUT);
-    pinMode(echo, INPUT_PULLDOWN);   // prevents floating input when sensor unplugged
+    pinMode(echo, INPUT);   // prevents floating input when sensor unplugged
     digitalWrite(trig, LOW);
 
     // Initialize safe defaults
@@ -36,7 +36,7 @@ void Ultrasonic::update() {
     }
 
     // Step 2: Non-blocking echo capture
-    if (waitingForEcho) {
+    if (waitingForEcho ) {
         int state = digitalRead(echo);
 
         // Rising edge
@@ -71,7 +71,7 @@ void Ultrasonic::update() {
         }
 
         // HARDENING: Timeout (no echo received)
-        if (waitingForEcho && (now - lastTriggerTime > 30000)) {
+        if (waitingForEcho && (now - lastTriggerTime > 40000)) {
             waitingForEcho = false;
             data.distance_cm = -1.0f;
             data.valid = false;
